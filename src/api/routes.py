@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, Blueprint
-from api.models import db, User
+from api.models import db, User, Administrator
 from api.utils import APIException
 from flask_cors import CORS
 
@@ -89,5 +89,83 @@ def delete_user(user_id):
     db.session.commit()
 
     return jsonify({"msg": "Usuario eliminado"}), 200
+
+
+
+### 🔹 CREAR UN ADMINISTRADOR ###
+@api.route('/administrators', methods=['POST'])
+def create_administrator():
+    body = request.get_json()
+
+    if not body:
+        return jsonify({"msg": "No se recibió ningún dato"}), 400  
+
+    admin = Administrator.query.filter_by(email=body["email"]).first()
+    if admin is None: 
+        admin = Administrator(
+            name=body["name"],
+            last_name=body["last_name"],
+            email=body["email"],  
+            password=body["password"],  # ⚠️ Luego encriptaremos esto
+            is_active=True,
+            img_profile=body.get("img_profile", "")
+        )
+        db.session.add(admin)
+        db.session.commit()
+
+        return jsonify({"msg": "Administrador creado"}), 201  
+    else:
+        return jsonify({"msg": "Ya hay un administrador con ese email"}), 409
+
+
+### 🔹 OBTENER TODOS LOS ADMINISTRADORES ###
+@api.route('/administrators', methods=['GET'])
+def get_administrators():
+    all_admins = Administrator.query.all()
+    results = [admin.serialize() for admin in all_admins]
+    return jsonify(results), 200
+
+
+### 🔹 OBTENER UN ADMINISTRADOR POR ID ###
+@api.route('/administrators/<int:admin_id>', methods=['GET'])
+def get_administrator(admin_id):
+    admin = Administrator.query.get(admin_id)
+    if not admin:
+        return jsonify({"msg": "Administrador no encontrado"}), 404
+
+    return jsonify(admin.serialize()), 200
+
+
+### 🔹 EDITAR UN ADMINISTRADOR POR ID ###
+@api.route('/administrators/<int:admin_id>', methods=['PUT'])
+def update_administrator(admin_id):
+    admin = Administrator.query.get(admin_id)
+    if not admin:
+        return jsonify({"msg": "Administrador no encontrado"}), 404
+
+    body = request.get_json()
+
+    admin.name = body.get("name", admin.name)
+    admin.last_name = body.get("last_name", admin.last_name)
+    admin.email = body.get("email", admin.email)
+    admin.password = body.get("password", admin.password)  # ⚠️ Luego encriptaremos esto
+    admin.is_active = body.get("is_active", admin.is_active)
+
+    db.session.commit()
+
+    return jsonify({"msg": "Administrador actualizado", "admin": admin.serialize()}), 200
+
+
+### 🔹 ELIMINAR UN ADMINISTRADOR POR ID ###
+@api.route('/administrators/<int:admin_id>', methods=['DELETE'])
+def delete_administrator(admin_id):
+    admin = Administrator.query.get(admin_id)
+    if not admin:
+        return jsonify({"msg": "Administrador no encontrado"}), 404
+
+    db.session.delete(admin)
+    db.session.commit()
+
+    return jsonify({"msg": "Administrador eliminado"}), 200
 
 
