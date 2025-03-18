@@ -2,6 +2,8 @@ const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
 			message: null,
+			user: null, // Guardará el usuario autenticado,
+            error: null, // Guardará errores en registro/login,
 			demo: [
 				{
 					title: "FIRST",
@@ -21,6 +23,62 @@ const getState = ({ getStore, getActions, setStore }) => {
 				getActions().changeColor(0, "green");
 			},
 
+			  // 🟢 REGISTRAR USUARIO
+			  registerUser: async (name, last_name, email, password) => {
+                try {
+                    const response = await fetch("http://127.0.0.1:5000/api/users", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ name, last_name, email, password })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        alert("Registro exitoso");
+                        return true;
+                    } else {
+                        setStore({ error: data.msg });
+                        return false;
+                    }
+                } catch (error) {
+                    console.error("Error en el registro:", error);
+                    setStore({ error: "Error en el servidor" });
+                    return false;
+                }
+            },
+
+            // 🟠 INICIAR SESIÓN (Por ahora solo verifica credenciales)
+            loginUser: async (email, password) => {
+                try {
+                    const response = await fetch("http://127.0.0.1:5000/api/login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        setStore({ user: data.user });
+                        alert("Inicio de sesión exitoso");
+                        return true;
+                    } else {
+                        setStore({ error: data.msg });
+                        return false;
+                    }
+                } catch (error) {
+                    console.error("Error en login:", error);
+                    setStore({ error: "Error en el servidor" });
+                    return false;
+                }
+            },
+
+            // 🔴 CERRAR SESIÓN
+            logoutUser: () => {
+                setStore({ user: null });
+                alert("Has cerrado sesión");
+            },
 			getMessage: async () => {
 				try{
 					// fetching data from the backend
